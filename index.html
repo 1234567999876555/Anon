@@ -1,1 +1,467 @@
-index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Forex Master Glass</title>
+<style>
+  :root {
+    --bg: #000000;
+    --glass-surface: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-highlight: rgba(255, 255, 255, 0.1);
+    --text: #ffffff;
+    --text-muted: #a1a1aa;
+    --accent: #a78bfa; /* Soft Purple */
+    --accent-glow: 0 0 15px rgba(139, 92, 246, 0.3);
+    
+    /* Neon Colors */
+    --neon-blue: #3b82f6;
+    --neon-pink: #ec4899;
+    --neon-cyan: #06b6d4;
+    --neon-green: #10b981;
+  }
+
+  /* RESTRICTIONS */
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; touch-action: pan-y; }
+
+  body {
+    margin: 0; padding: 12px;
+    background: var(--bg);
+    /* Subtle background mesh to make glass visible */
+    background-image: 
+      radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.15) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 40%);
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--text); overflow: hidden; height: 100vh;
+  }
+
+  /* GLASS CARD */
+  .card {
+    background: rgba(10, 10, 12, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 20px 16px;
+    height: 96vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    position: relative; overflow: hidden;
+  }
+
+  /* --- HEADER --- */
+  .header { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; z-index: 500; position: relative; }
+
+  /* Glass Button */
+  .tz-wrapper { position: relative; z-index: 600; }
+  .tz-btn {
+    background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    border: 1px solid var(--glass-border);
+    border-radius: 16px; color: #fff; width: 100%; padding: 14px 18px;
+    font-weight: 600; font-size: 14px; letter-spacing: 0.5px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    backdrop-filter: blur(5px);
+  }
+  .tz-btn:active { background: var(--glass-highlight); transform: scale(0.99); }
+
+  /* Glass Dropdown */
+  .tz-dropdown {
+    position: absolute; top: 115%; left: 0; width: 100%;
+    background: rgba(15, 15, 20, 0.95);
+    border: 1px solid var(--glass-border); border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+    backdrop-filter: blur(20px);
+    display: none; max-height: 300px; overflow-y: auto; z-index: 999;
+  }
+  .tz-dropdown.show { display: block; animation: glassFade 0.2s ease-out; }
+  @keyframes glassFade { from{opacity:0; transform:translateY(-10px) scale(0.95);} to{opacity:1; transform:translateY(0) scale(1);} }
+  
+  .tz-option { padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 13px; color: #ccc; }
+  .tz-option:hover { background: var(--glass-highlight); color: var(--accent); }
+
+  .controls-row { display: flex; justify-content: space-between; align-items: center; }
+
+  /* Crystal Clock Box */
+  .time-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.2); /* Top highlight */
+    border-radius: 12px; padding: 8px 16px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  }
+  .live-dot {
+    width: 6px; height: 6px; background: #4ade80; border-radius: 50%;
+    box-shadow: 0 0 10px #4ade80; display: none; animation: blink 1.5s infinite;
+  }
+  .live-dot.active { display: block; }
+  .clock-text {
+    font-family: 'Courier New', monospace; font-size: 18px; font-weight: 700; color: #fff;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3);
+  }
+
+  /* Glass Switch */
+  .toggle-wrapper { display: flex; align-items: center; gap: 8px; }
+  .switch-lbl { font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; }
+  .switch { position: relative; width: 42px; height: 22px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5); border-radius: 34px; transition: .3s; 
+    border: 1px solid var(--glass-border);
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 14px; width: 14px;
+    left: 3px; bottom: 3px; background: #a1a1aa; border-radius: 50%; transition: .3s;
+  }
+  input:checked + .slider { background: rgba(139, 92, 246, 0.2); border-color: var(--accent); }
+  input:checked + .slider:before { transform: translateX(20px); background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+
+  /* --- CHART AREA --- */
+  .chart-area { position: relative; flex-grow: 1; margin-top: 25px; padding-right: 10px; z-index: 10; }
+
+  /* Needle */
+  .needle-wrapper { position: absolute; top: -50px; bottom: 0; width: 40px; margin-left: -20px; z-index: 50; cursor: grab; }
+  .needle-line {
+    position: absolute; left: 50%; top: 2px; bottom: 0; width: 1px;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5); transform: translateX(-50%);
+  }
+  .pin-head {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; width: 60px;
+  }
+  /* Glass Analog Clock */
+  .analog {
+    width: 44px; height: 44px; 
+    background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+    border-radius: 50%; border: 1px solid rgba(255,255,255,0.3);
+    position: relative; z-index: 2; margin-bottom: -1px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  }
+  .hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom; transform: translateX(-50%); border-radius: 4px; }
+  .h-hand { width: 3px; height: 11px; background: #fff; z-index: 3; }
+  .m-hand { width: 2px; height: 15px; background: #ccc; z-index: 4; }
+  .s-hand { width: 1px; height: 17px; background: var(--accent); z-index: 5; box-shadow: 0 0 5px var(--accent); }
+  .center-dot { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #fff; transform: translate(-50%, -50%); border-radius: 50%; z-index: 6; }
+
+  .digital-bubble {
+    background: rgba(20, 20, 25, 0.9); border: 1px solid var(--glass-border);
+    color: #fff; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700;
+    margin-top: 6px; position: relative; z-index: 10;
+  }
+
+  /* Grid & Bars */
+  .axis-row { height: 25px; margin-left: 70px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; position: relative; }
+  .axis-num { position: absolute; bottom: 6px; transform: translateX(-50%); font-size: 9px; color: var(--text-muted); font-weight: 700; }
+  .grid-bg { position: absolute; top: 30px; left: 70px; right: 10px; bottom: 0; }
+  .grid-line { position: absolute; top: 0; bottom: 0; width: 1px; border-left: 1px dashed rgba(255,255,255,0.08); }
+
+  .session-row { height: 60px; margin-bottom: 8px; display: flex; align-items: center; position: relative; }
+  .city-col { width: 70px; padding-right: 12px; text-align: right; }
+  .flag { width: 14px; height: 14px; border-radius: 50%; vertical-align: middle; border: 1px solid rgba(255,255,255,0.2); margin-left: 4px;}
+  .city-name { font-size: 12px; font-weight: 700; color: #e4e4e7; }
+  .city-time { font-size: 9px; color: var(--text-muted); display: block; margin-top: 3px; font-weight: 500; }
+  
+  .bar-track { flex-grow: 1; height: 100%; position: relative; }
+  .bar { 
+    position: absolute; top: 18px; height: 24px; border-radius: 6px; 
+    opacity: 0.8; transition: 0.3s;
+    backdrop-filter: blur(4px); /* Glassy bars */
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  /* Neon Bar Colors */
+  .syd .bar { background: linear-gradient(90deg, rgba(30, 64, 175, 0.4), rgba(59, 130, 246, 0.6)); border-color: var(--neon-blue); }
+  .syd .bar-label { color: var(--neon-blue); }
+  .tok .bar { background: linear-gradient(90deg, rgba(131, 24, 67, 0.4), rgba(236, 72, 153, 0.6)); border-color: var(--neon-pink); }
+  .tok .bar-label { color: var(--neon-pink); }
+  .lon .bar { background: linear-gradient(90deg, rgba(14, 116, 144, 0.4), rgba(34, 211, 238, 0.6)); border-color: var(--neon-cyan); }
+  .lon .bar-label { color: var(--neon-cyan); }
+  .ny .bar { background: linear-gradient(90deg, rgba(20, 83, 45, 0.4), rgba(16, 185, 129, 0.6)); border-color: var(--neon-green); }
+  .ny .bar-label { color: var(--neon-green); }
+
+  .bar-label { position: absolute; top: -16px; left: 0; font-size: 9px; font-weight: 800; text-transform: uppercase; white-space: nowrap; text-shadow: 0 0 10px currentColor; }
+
+  /* Volume Wave */
+  .vol-section { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; height: 80px; display: flex; }
+  .vol-info { width: 70px; text-align: right; font-size: 10px; color: var(--text-muted); padding-top: 20px; padding-right: 12px; }
+  .vol-badge { 
+    background: rgba(255,255,255,0.05); color: #ccc; padding: 3px 8px; 
+    border-radius: 6px; font-weight: 700; display: inline-block; margin-top: 4px; font-size: 9px;
+    border: 1px solid var(--glass-border);
+  }
+  .vol-chart { flex-grow: 1; height: 100%; position: relative; }
+  .vol-svg { width: 100%; height: 100%; filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.1)); }
+  .vol-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.15); pointer-events: none; z-index: 5; }
+
+  /* --- SOCIAL FOOTER --- */
+  .social-bar {
+    display: flex; justify-content: center; gap: 15px;
+    margin-top: 10px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .social-btn {
+    text-decoration: none; padding: 8px 16px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; color: #fff;
+    display: flex; align-items: center; gap: 6px; transition: 0.2s;
+    background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+  }
+  .social-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+  .insta span { background: linear-gradient(45deg, #f09433, #bc1888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .yt span { color: #ff0000; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <div class="tz-wrapper">
+      <div class="tz-btn" onclick="toggleTz()">
+        <span id="tzLabel">Detecting...</span> <span>▼</span>
+      </div>
+      <div class="tz-dropdown" id="tzList"></div>
+    </div>
+
+    <div class="controls-row">
+      <div class="time-box">
+        <div class="live-dot" id="liveDot"></div>
+        <div class="clock-text" id="wallClock">--:--:--</div>
+      </div>
+      <div class="toggle-wrapper">
+        <span class="switch-lbl">24H</span>
+        <label class="switch">
+          <input type="checkbox" id="fmtToggle" onchange="redrawAll()">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-area" id="chartArea">
+    
+    <div class="needle-wrapper" id="needle">
+      <div class="needle-line"></div>
+      <div class="pin-head">
+        <div class="analog">
+          <div class="hand h-hand" id="hHand"></div>
+          <div class="hand m-hand" id="mHand"></div>
+          <div class="hand s-hand" id="sHand"></div>
+          <div class="center-dot"></div>
+        </div>
+        <div class="digital-bubble" id="pinTime">--:--</div>
+      </div>
+    </div>
+
+    <div class="axis-row" id="axisRow"></div>
+    <div class="grid-bg" id="gridBg"></div>
+
+    <div class="session-row syd"><div class="city-col"><div><span class="city-name">Sydney</span><img src="https://flagcdn.com/w40/au.png" class="flag"></div><span class="city-time" id="t-syd"></span></div><div class="bar-track" id="b-syd"></div></div>
+    <div class="session-row tok"><div class="city-col"><div><span class="city-name">Tokyo</span><img src="https://flagcdn.com/w40/jp.png" class="flag"></div><span class="city-time" id="t-tok"></span></div><div class="bar-track" id="b-tok"></div></div>
+    <div class="session-row lon"><div class="city-col"><div><span class="city-name">London</span><img src="https://flagcdn.com/w40/gb.png" class="flag"></div><span class="city-time" id="t-lon"></span></div><div class="bar-track" id="b-lon"></div></div>
+    <div class="session-row ny"><div class="city-col"><div><span class="city-name">New York</span><img src="https://flagcdn.com/w40/us.png" class="flag"></div><span class="city-time" id="t-ny"></span></div><div class="bar-track" id="b-ny"></div></div>
+
+    <div class="vol-section">
+      <div class="vol-info">Vol<br><span class="vol-badge" id="volBadge">--</span></div>
+      <div class="vol-chart">
+        <div class="vol-cursor" id="volCursor"></div>
+        <svg class="vol-svg" viewBox="0 0 100 30" preserveAspectRatio="none">
+          <defs><linearGradient id="volGrad" x1="0" x2="1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="50%" stop-color="#ec4899"/><stop offset="100%" stop-color="#22c55e"/></linearGradient></defs>
+          <path d="M0,30 L0,22 Q10,15 20,20 T40,18 T60,10 T80,5 T100,12 V30 Z" fill="url(#volGrad)" opacity="0.15"/>
+          <path d="M0,22 Q10,15 20,20 T40,18 T60,10 T80,5 T100,12" fill="none" stroke="url(#volGrad)" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="social-bar">
+    <a href="https://instagram.com/tradexanitybanks" target="_blank" class="social-btn insta"><span>Instagram</span></a>
+    <a href="https://youtube.com/@TradeXanityBanks" target="_blank" class="social-btn yt"><span>YouTube</span></a>
+  </div>
+</div>
+<script>
+  // CONFIG: STANDARD UTC MARKET HOURS (Auto-DST)
+  const markets = [
+    { id: 'syd', name: 'Sydney', baseUtcOpen: 21, baseUtcClose: 6, region: 'au' },
+    { id: 'tok', name: 'Tokyo', baseUtcOpen: 0, baseUtcClose: 9, region: 'none' },
+    { id: 'lon', name: 'London', baseUtcOpen: 8, baseUtcClose: 17, region: 'eu' },
+    { id: 'ny', name: 'New York', baseUtcOpen: 13, baseUtcClose: 22, region: 'us' }
+  ];
+
+  const zones = [
+    { id: 'Asia/Kolkata', name: 'Kolkata (IST)' },
+    { id: 'UTC', name: 'UTC / GMT' },
+    { id: 'America/New_York', name: 'New York (EST)' },
+    { id: 'Europe/London', name: 'London (GMT)' },
+    { id: 'Asia/Tokyo', name: 'Tokyo (JST)' },
+    { id: 'Australia/Sydney', name: 'Sydney (AEST)' }
+  ];
+
+  let currentZone = 'Asia/Kolkata';
+  let isDragging = false;
+  let dragOffset = 0;
+  let isLive = true;
+
+  function init() {
+    try { const d = Intl.DateTimeFormat().resolvedOptions().timeZone; if(d) currentZone = d; } catch(e){}
+    applyDST();
+    document.getElementById('tzList').innerHTML = zones.map(z => 
+      `<div class="tz-option" onclick="setZone('${z.id}', '${z.name}')">${z.name}</div>`
+    ).join('');
+    updateTzLabel();
+    redrawAll();
+    setupDrag();
+    requestAnimationFrame(loop);
+  }
+
+  function applyDST() {
+    const now = new Date();
+    const isDst = (tz) => {
+        const d1 = new Date(now.toLocaleString("en-US", {timeZone: tz}));
+        const d2 = new Date(now.toLocaleString("en-US", {timeZone: "UTC"}));
+        const diff = (d1 - d2) / (1000 * 60 * 60);
+        if(tz.includes('New_York')) return diff > -5; 
+        if(tz.includes('London')) return diff > 0;    
+        if(tz.includes('Sydney')) return diff > 10;   
+        return false;
+    };
+    markets.forEach(m => {
+        let shift = 0;
+        if(m.region === 'us' && isDst('America/New_York')) shift = -1;
+        if(m.region === 'eu' && isDst('Europe/London')) shift = -1;
+        if(m.region === 'au' && isDst('Australia/Sydney')) shift = -1;
+        m.utcOpen = m.baseUtcOpen + shift; m.utcClose = m.baseUtcClose + shift;
+        if(m.utcOpen < 0) m.utcOpen += 24; if(m.utcClose < 0) m.utcClose += 24;
+    });
+  }
+
+  function toggleTz() { 
+    event.stopPropagation();
+    document.getElementById('tzList').classList.toggle('show'); 
+  }
+  function setZone(id, name) {
+    currentZone = id; updateTzLabel(); document.getElementById('tzList').classList.remove('show'); redrawAll();
+  }
+  function updateTzLabel() {
+    const z = zones.find(x => x.id === currentZone);
+    document.getElementById('tzLabel').innerText = z ? z.name : currentZone.split('/')[1];
+  }
+
+  function redrawAll() {
+    document.getElementById('axisRow').innerHTML = '';
+    document.querySelectorAll('.city-time').forEach(e => e.innerText = '');
+    document.querySelectorAll('.bar-track').forEach(e => e.innerHTML = '');
+    drawAxis();
+  }
+
+  function setupDrag() {
+    const w = document.getElementById('needle');
+    const c = document.getElementById('chartArea');
+    function start(e) { isDragging = true; isLive = false; document.getElementById('liveDot').classList.remove('active'); }
+    function move(e) {
+      if(!isDragging) return;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const rect = c.getBoundingClientRect();
+      const chartStart = rect.left + 70; 
+      const chartWidth = rect.width - 85;
+      let x = clientX - chartStart;
+      if (x < 0) x = 0; if (x > chartWidth) x = chartWidth;
+      dragOffset = (x / chartWidth) * 100;
+    }
+    function end() { if(isDragging) { isDragging = false; isLive = true; } }
+    w.addEventListener('mousedown', start); document.addEventListener('mousemove', move); document.addEventListener('mouseup', end);
+    w.addEventListener('touchstart', start); document.addEventListener('touchmove', move); document.addEventListener('touchend', end);
+    c.addEventListener('click', (e) => { if(!e.target.closest('.needle-wrapper')) { start(e); move(e); end(); }});
+  }
+
+  function loop() {
+    const now = new Date();
+    let displayTime; 
+    if(isLive) {
+      document.getElementById('liveDot').classList.add('active');
+      const zStr = now.toLocaleString("en-US", {timeZone: currentZone, hour12:false});
+      const [dP, tP] = zStr.split(', '); const [h, m, s] = tP.split(':').map(Number);
+      const totalSec = (h*3600) + (m*60) + s + (now.getMilliseconds()/1000);
+      dragOffset = (totalSec / 86400) * 100;
+      displayTime = new Date(); displayTime.setHours(h, m, s);
+    } else {
+      const totalSec = (dragOffset / 100) * 86400;
+      const h = Math.floor(totalSec / 3600); const m = Math.floor((totalSec % 3600) / 60);
+      displayTime = new Date(); displayTime.setHours(h, m, 0);
+    }
+
+    document.getElementById('needle').style.left = `calc(70px + (100% - 85px) * ${dragOffset/100})`;
+    document.getElementById('volCursor').style.left = `${dragOffset}%`;
+    
+    updateVisuals(displayTime); updateSessionStatus(displayTime); updateVolume(displayTime);
+    requestAnimationFrame(loop);
+  }
+
+  function updateVisuals(dateObj) {
+    const h = dateObj.getHours(); const m = dateObj.getMinutes(); const s = dateObj.getSeconds();
+    const hDeg = (h % 12) * 30 + (m * 0.5); const mDeg = m * 6 + (s * 0.1); const sDeg = s * 6 + (ms = dateObj.getMilliseconds() * 0.006);
+    document.getElementById('hHand').style.transform = `translateX(-50%) rotate(${hDeg}deg)`;
+    document.getElementById('mHand').style.transform = `translateX(-50%) rotate(${mDeg}deg)`;
+    document.getElementById('sHand').style.transform = `translateX(-50%) rotate(${sDeg}deg)`;
+    
+    const is24 = document.getElementById('fmtToggle').checked;
+    document.getElementById('wallClock').innerText = dateObj.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', second:'2-digit', hour12: !is24});
+    document.getElementById('pinTime').innerText = dateObj.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12: !is24});
+  }
+
+  function updateSessionStatus(simDate) {
+    const simMins = simDate.getHours()*60 + simDate.getMinutes();
+    markets.forEach(m => {
+      const sDate = getZonedTimeFromUTC(m.utcOpen); const eDate = getZonedTimeFromUTC(m.utcClose);
+      const txt = document.getElementById(`t-${m.id}`);
+      if(txt.innerText === "") {
+         const is24 = document.getElementById('fmtToggle').checked;
+         const opt = {hour:'numeric', minute:'2-digit', hour12: !is24};
+         txt.innerText = `${sDate.toLocaleTimeString('en-US', opt)} - ${eDate.toLocaleTimeString('en-US', opt)}`;
+         const trk = document.getElementById(`b-${m.id}`);
+         if(trk.children.length === 0) {
+            const s = sDate.getHours()*60+sDate.getMinutes(); const e = eDate.getHours()*60+eDate.getMinutes();
+            if(e < s) { makeBar(trk, s, 1440, m.name); makeBar(trk, 0, e, m.name); } 
+            else { makeBar(trk, s, e, m.name); }
+         }
+      }
+      const s = sDate.getHours()*60+sDate.getMinutes(); const e = eDate.getHours()*60+eDate.getMinutes();
+      let open = false; if(e < s) { if(simMins >= s || simMins < e) open=true; } else { if(simMins >= s && simMins < e) open=true; }
+      const trk = document.getElementById(`b-${m.id}`);
+      trk.querySelectorAll('.bar-label').forEach(l => l.innerText = `${m.name} ${open?'OPEN':'CLOSED'}`);
+      trk.querySelectorAll('.bar').forEach(b => { b.style.opacity = open ? '1' : '0.2'; b.style.filter = open ? 'none' : 'grayscale(100%)'; });
+    });
+  }
+
+  function updateVolume(simDate) {
+    const utc = new Date(simDate.toLocaleString("en-US", {timeZone:"UTC"})); const h = utc.getHours();
+    let lvl="LOW"; let col="#71717a";
+    if(h>=13 && h<17) { lvl="MAX"; col="#22c55e"; }
+    else if(h>=8 && h<21) { lvl="HIGH"; col="#3b82f6"; }
+    else if(h>=0 && h<8) { lvl="MID"; col="#eab308"; }
+    const b = document.getElementById('volBadge'); b.innerText = lvl; b.style.color = col;
+  }
+
+  function getZonedTimeFromUTC(utcHour) {
+    const now = new Date();
+    const utcTimestamp = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), utcHour, 0, 0);
+    return new Date(new Date(utcTimestamp).toLocaleString("en-US", {timeZone: currentZone}));
+  }
+  function makeBar(p, s, e, n) {
+    const d = document.createElement('div'); d.className = 'bar';
+    d.style.left = (s/1440)*100 + '%'; d.style.width = ((e-s)/1440)*100 + '%';
+    d.innerHTML = `<div class="bar-label">${n}</div>`; p.appendChild(d);
+  }
+  function drawAxis() {
+    let h = '', g = ''; const is24 = document.getElementById('fmtToggle').checked;
+    for(let i=0; i<=24; i+=2) {
+      const pct = (i/24)*100; let l = i; if(!is24) { if(i===0||i===24) l=12; else if(i>12) l=i-12; } else l = String(i).padStart(2,'0');
+      h += `<div class="axis-num" style="left:${pct}%">${l}</div>`; g += `<div class="grid-line" style="left:${pct}%"></div>`;
+    }
+    document.getElementById('axisRow').innerHTML = h; document.getElementById('gridBg').innerHTML = g;
+  }
+  window.onclick = function(e) { if(!e.target.closest('.tz-wrapper')) document.getElementById('tzList').classList.remove('show'); }
+  init();
+</script>
+</body>
+</html>
